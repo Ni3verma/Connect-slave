@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -18,10 +19,13 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 const val WRITE_SETTINGS_PERMISSION_CODE = 124
 const val REQ_PICK_SOUNDFILE_CODE = 125
+
 class MainActivity : AppCompatActivity() {
     private lateinit var db: DatabaseReference
     private lateinit var context: Context
-
+    private var mediaPlayer: MediaPlayer? = null
+    private var playbackState: String? = null
+    private var currVolume: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,12 +47,17 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         db.removeEventListener(settingsListener)
+        mediaPlayer?.release()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQ_PICK_SOUNDFILE_CODE && resultCode == Activity.RESULT_OK) {
-            Log.d("Nitin", data?.data?.toString())
+            val songUri = data?.data
+            Log.d("Nitin", songUri?.toString())
+            mediaPlayer = MediaPlayer.create(context, songUri)
+            playbackState?.let { updatePlaybackState(it) }
+            currVolume?.let { updateVolume(it) }
         }
 
         if (requestCode == WRITE_SETTINGS_PERMISSION_CODE && hasSettingsWritePermission()) {
@@ -63,9 +72,11 @@ class MainActivity : AppCompatActivity() {
             Log.d("Nitin", settings?.toString())
             settings?.let {
                 updateBrightness(it.brightness)
-
+                updatePlaybackState(it.state)
+                updateVolume(it.volume)
             }
         }
+
         override fun onCancelled(error: DatabaseError) {
             Log.d("Nitin", "failed to read value", error.toException())
         }
@@ -84,6 +95,28 @@ class MainActivity : AppCompatActivity() {
             android.provider.Settings.System.SCREEN_BRIGHTNESS,
             level
         )
+    }
+
+    fun updatePlaybackState(state: String) {
+        playbackState = state
+        mediaPlayer?.let {
+            when (state) {
+                "play" ->
+                    if (!it.isPlaying)
+                        it.start()
+                "pause" ->
+                    if (it.isPlaying)
+                        it.pause()
+            }
+        }
+    }
+
+    fun updateVolume(volume: Int) {
+        currVolume = volume
+        val maxVolume = 101
+        val vol = (Math.log(volume.toDouble()) / Math.log(maxVolume.toDouble())).toFloat()
+        Log.d("Nitin", "volume=$vol")
+        mediaPlayer?.setVolume(vol, vol)
     }
 
     fun hasSettingsWritePermission(): Boolean {
