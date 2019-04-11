@@ -1,6 +1,7 @@
 package com.nitin.connect_slave
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,6 +14,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.FirebaseApp
 import com.google.firebase.database.*
+import kotlinx.android.synthetic.main.activity_main.*
 
 const val WRITE_SETTINGS_PERMISSION_CODE = 124
 const val REQ_PICK_SOUNDFILE_CODE = 125
@@ -34,6 +36,8 @@ class MainActivity : AppCompatActivity() {
         } else {
             db.addValueEventListener(settingsListener)
         }
+
+        choose_song_btn.setOnClickListener { openChooser() }
     }
 
     override fun onDestroy() {
@@ -43,9 +47,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_PICK_SOUNDFILE_CODE && resultCode == Activity.RESULT_OK) {
+            Log.d("Nitin", data?.data?.toString())
+        }
+
         if (requestCode == WRITE_SETTINGS_PERMISSION_CODE && hasSettingsWritePermission()) {
             db.addValueEventListener(settingsListener)
         }
+
     }
 
     private val settingsListener = object : ValueEventListener {
@@ -60,6 +69,13 @@ class MainActivity : AppCompatActivity() {
         override fun onCancelled(error: DatabaseError) {
             Log.d("Nitin", "failed to read value", error.toException())
         }
+    }
+
+    private fun openChooser() {
+        val songChooserintent = Intent()
+        songChooserintent.action = Intent.ACTION_GET_CONTENT
+        songChooserintent.type = "audio/*"
+        startActivityForResult(Intent.createChooser(songChooserintent, "Choose mp3 song"), REQ_PICK_SOUNDFILE_CODE)
     }
 
     fun updateBrightness(level: Int) {
