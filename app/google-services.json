@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:95825917779:android:8f7ef3619880983a",
         "android_client_info": {
-          "package_name": "com.nitin.connect_master"
+          "package_name": "com.nitin.connect_slave"
         }
       },
       "oauth_client": [
